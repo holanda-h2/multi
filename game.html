@@ -1,0 +1,903 @@
+<html>
+
+<head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
+    <title>LEMAT QUIZ</title>
+
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+
+    <style>
+        body {
+            /*  margin: 40px 0 0 0; */
+            padding: 0;
+            background-color: #EEE;
+            /* text-align: center; */
+        }
+        
+        #game-canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            image-rendering: -moz-crisp-edges;
+            -webkit-box-shadow: 0px 4px 17px 0px rgba(0, 0, 0, 0.19);
+            -moz-box-shadow: 0px 4px 17px 0px rgba(0, 0, 0, 0.19);
+            box-shadow: 0px 4px 17px 0px rgba(0, 0, 0, 0.19);
+            /* margin-bottom: 20px;
+            margin-left: 20px;
+            margin-right: 20px; */
+            display: inline-block;
+            vertical-align: top;
+        }
+        
+        #score-table {
+            font-size: 13px;
+            vertical-align: top;
+            display: inline-block;
+            font-family: Arial, Helvetica, sans-serif
+        }
+        
+        #score-table tr.header td {
+            border-bottom: 1px solid #CCC;
+            padding-bottom: 8px;
+        }
+        
+        #score-table tr.footer td {
+            border-top: 1px solid #CCC;
+            font-size: 11px;
+        }
+        
+        #score-table td {
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+        
+        #score-table .socket-id {
+            font-weight: normal;
+            color: #222;
+            width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block
+        }
+        
+        #score-table .score-value {
+            font-weight: bold;
+            color: #000;
+            text-align: right;
+        }
+        
+        #score-table .current-player .socket-id,
+        #score-table .current-player .score-value {
+            color: #bdaa27;
+        }
+        
+        #max-concurrent-connection-message {
+            background-color: #F0DB4F;
+            border: 1px solid #000;
+            text-align: center;
+            margin: auto;
+            margin: 100px;
+            padding: 50px;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            display: none;
+        }
+        
+        button {
+            background-color: #04AA6D;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            border-width: 3px;
+            border-color: #04AA6D;
+        }
+        
+        button:hover {
+            border-color: #000;
+        }
+        /* The container */
+        
+        .container {
+            display: block;
+            position: relative;
+            padding-left: 35px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            font-size: 22px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        /* Hide the browser's default radio button */
+        
+        .container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+        /* Create a custom radio button */
+        
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 25px;
+            width: 25px;
+            background-color: white;
+            border-radius: 50%;
+        }
+        /* On mouse-over, add a grey background color */
+        
+        .container:hover input~.checkmark {
+            background-color: white;
+        }
+        /* When the radio button is checked, add a blue background */
+        
+        .container input:checked~.checkmark {
+            background-color: #2196F3;
+        }
+        /* Create the indicator (the dot/circle - hidden when not checked) */
+        
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+        /* Show the indicator (dot/circle) when checked */
+        
+        .container input:checked~.checkmark:after {
+            display: block;
+        }
+        /* Style the indicator (dot/circle) */
+        
+        .container .checkmark:after {
+            top: 9px;
+            left: 9px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+        }
+        /* question */
+        
+        *,
+        *:after,
+        *:before {
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+        }
+        
+        header {
+            position: relative;
+            text-align: center;
+            text-transform: uppercase;
+            color: #1f8f7b;
+            /* width: 50%; */
+            border-bottom: 1px solid dareken(#2dceb1, 15%);
+            letter-spacing: 4px;
+            padding: 12px 0;
+            background: #fafafa;
+            border-bottom: 1px solid #eeeeee;
+        }
+        
+        body {
+            /*background: #fff; */
+            background: #fafafa;
+            font-family: "Raleway";
+            line-height: 1.55;
+            color: #737373;
+            font-weight: 400;
+        }
+        
+        body a {
+            color: #27b198;
+            text-decoration: none;
+            border-bottom: 2px solid #fff;
+        }
+        
+        body a:hover {
+            border-color: #eeeeee;
+        }
+        
+        .wrap {
+            max-width: 48em;
+            margin: 0 auto;
+            padding: 2.5em 0 4em;
+        }
+        
+        .row.last {
+            border-bottom: 1px solid #eeeeee;
+            background: #fafafa;
+        }
+        
+        .row {
+            background: #fafafa;
+        }
+        
+        section {
+            position: relative;
+            padding: 10px 10px;
+            /* width: 50%; */
+            min-height: 2em;
+            /*  float: left; */
+            background: #fafafa;
+            border-top: 1px solid #eeeeee;
+            border-left: 1px solid #eeeeee;
+        }
+        
+        section:nth-child(even) {
+            border-right: 1px solid #eeeeee;
+        }
+        
+        section.item-incorrect {
+            background: #f6f6f6;
+        }
+        
+        section.item-incorrect:before {
+            position: absolute;
+            z-index: 399;
+            bottom: 0;
+            right: 0;
+            content: "";
+            height: 0;
+            width: 0;
+            border: 35px solid;
+            border-color: transparent #ff5c61 #ff5c61 transparent;
+        }
+        
+        section.item-incorrect:after {
+            line-height: 1.4;
+            position: absolute;
+            z-index: 499;
+            /* font-family: "fontawesome";
+            content: ""; */
+            bottom: 0;
+            right: 7px;
+            font-size: 1.9em;
+            color: #ff383e;
+        }
+        
+        section.item-correct:before {
+            position: absolute;
+            z-index: 399;
+            bottom: 0;
+            right: 0;
+            content: "";
+            height: 0;
+            width: 0;
+            border: 35px solid;
+            border-color: transparent #48d7bd #48d7bd transparent;
+        }
+        
+        section.item-correct:after {
+            line-height: 1.4;
+            position: absolute;
+            z-index: 499;
+            /*  font-family: "fontawesome";
+            content: ""; */
+            bottom: 0;
+            right: 7px;
+            font-size: 1.9em;
+            color: #2dceb1;
+        }
+        
+        input[type=radio] {
+            position: absolute;
+            visibility: hidden;
+        }
+        
+        input[type=radio]+label {
+            background: #fff;
+            display: inline-block;
+            padding: 5px 15px;
+            margin: 5px 10px 5px 0;
+            border: 1px solid #eeeeee;
+            -webkit-transition: all 0.1s linear;
+            -moz-transition: all 0.1s linear;
+            transition: all 0.1s linear;
+        }
+        
+        input[type=radio]+label:before {
+            /*  content: "";
+            font-family: "fontawesome"; */
+            margin-right: 7px;
+            color: #2dceb1;
+        }
+        
+        input[type=radio]+label:hover {
+            cursor: pointer;
+        }
+        
+        input[type=radio]:checked+label {
+            background: #50d9c0;
+            color: #1f8f7b;
+        }
+        
+        input[type=radio]:checked+label:before {
+            /* content: ""; */
+            color: #1f8f7b;
+        }
+        
+        .question {
+            font-weight: bold;
+        }
+        
+        .submit {
+            padding: 20px 5px;
+        }
+        
+        .submit button {
+            display: block;
+            outline: none;
+            width: 300px;
+            margin: 1em auto 1.5em;
+            padding: 0.8em 1em;
+            background: #f8f8f8;
+            color: gainsboro;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            border: 1px solid #eeeeee;
+        }
+    </style>
+
+
+</head>
+
+<body>
+    <header>
+        <small>LEMAT Quiz </small>
+    </header>
+
+    <section data-quiz-item>
+
+        <label id="idJogador"></label>
+        <div id="idResposta"></div>
+        <div id="id_question" class="question">
+        </div>
+        <div id="answer" class="choices" data-choices='["27","22","33","32"]'>
+            <input name="1" id="1_0" type="radio" disabled="true" onclick="respondeu(0);">
+            <label id="ans_0" for="1_0"></label>
+            <input name="1" id="1_1" type="radio" disabled="true" onclick="respondeu(1);">
+            <label id="ans_1" for="1_1"></label>
+            <input name="1" id="1_2" type="radio" disabled="true" onclick="respondeu(2);">
+            <label id="ans_2" for="1_2"></label>
+            <input name="1" id="1_3" type="radio" disabled="true" onclick="respondeu(3);">
+            <label id="ans_3" for="1_3"></label>
+
+        </div>
+
+    </section>
+    <section>
+
+        <button id="key-up"><i class="fa fa-arrow-up"></i></button>
+        <button id="key-left"><i class="fa fa-arrow-left"></i></button>
+        <button id="key-right"><i class="fa fa-arrow-right"></i></button>
+        <button id="key-down"><i class="fa fa-arrow-down"></i></button>
+
+
+
+    </section>
+
+
+    <section>
+        <div id="game-container">
+            <canvas id="game-canvas"></canvas>
+        </div>
+
+    </section>
+    <section>
+        <table id="score-table"></table>
+    </section>
+
+    <script>
+        let connected = false
+        const socket = io()
+        let game
+        const scoreTable = document.getElementById('score-table')
+        const gameCanvas = document.getElementById('game-canvas')
+        let totalPlayersCount = ''
+        const collectFruitAudio = new Audio('collect.mp3')
+        const collect100FruitAudio = new Audio('100-collect.mp3')
+
+        let person = null;
+
+        function disableAnswer() {
+            document.getElementById('1_0').disabled = true;
+            document.getElementById('1_1').disabled = true;
+            document.getElementById('1_2').disabled = true;
+            document.getElementById('1_3').disabled = true;
+
+            document.getElementById('1_0').checked = false;
+            document.getElementById('1_1').checked = false;
+            document.getElementById('1_2').checked = false;
+            document.getElementById('1_3').checked = false;
+
+        }
+
+        function newQuestion(question) {
+            disableAnswer();
+
+            document.getElementById('id_question').innerHTML = question.question;
+            document.getElementById('ans_0').innerHTML = question.answers[0];
+            document.getElementById('ans_1').innerHTML = question.answers[1];
+            document.getElementById('ans_2').innerHTML = question.answers[2];
+            document.getElementById('ans_3').innerHTML = question.answers[3];
+
+
+        }
+
+        function habiliteAnswer(socketId) {
+            if (socket.id == socketId) {
+                document.getElementById('1_0').disabled = false;
+                document.getElementById('1_1').disabled = false;
+                document.getElementById('1_2').disabled = false;
+                document.getElementById('1_3').disabled = false;
+            }
+        }
+
+        function respondeu(op) {
+            disableAnswer();
+
+
+            socket.emit('player-answer', socket.id, op);
+        }
+
+        function enterYourName() {
+            // alert(socket.id);
+            if (!(person == null)) {
+                return;
+            }
+            person = prompt("Please enter your name:", "Harry Potter");
+            // if (person == null || person == "") {
+            //      text = "User cancelled the prompt.";
+            //  } else {
+            //      text = "Hello " + person + "! How are you today?";
+            //  }
+            //document.getElementById("idNome").value = person;
+            //alert(person);
+
+            document.getElementById('idJogador').innerHTML = person;
+
+            socket.emit('player-nome', socket.id, person);
+            //console.log("Emitindo................")
+        }
+
+
+        function alterarNome() {
+            alert("Alterar: " + document.getElementById('idNome').value);
+        }
+
+
+        socket.on('connect', () => {
+            connected = true
+                //  console.log('> Connected to server')
+                // document.getElementById('idNome').value = socket.id;
+        })
+
+        socket.on('disconnect', () => {
+            //  console.log('> Disconnected')
+            connected = false
+        })
+
+        socket.on('bootstrap', (gameInitialState) => {
+
+
+
+            game = gameInitialState
+
+
+            //  alert(document.documentElement.clientWidth);
+            console.log('> Received initial state')
+            gameCanvas.style.width = `${game.canvasWidth * 12}px` //18
+            gameCanvas.style.height = `${game.canvasHeight * 12}px` //18
+            gameCanvas.width = game.canvasWidth
+            gameCanvas.height = game.canvasHeight
+
+            const context = gameCanvas.getContext('2d')
+
+            requestAnimationFrame(renderGame)
+
+            function renderGame() {
+                const allPixels = game.canvasWidth * game.canvasHeight
+
+                context.globalAlpha = 1
+                context.fillStyle = 'white'
+                context.fillRect(0, 0, game.canvasWidth, game.canvasHeight)
+
+                for (const socketId in game.players) {
+                    const player = game.players[socketId]
+                    context.fillStyle = '#000000'
+                    context.globalAlpha = 0.1
+                    context.fillRect(player.x, player.y, 1, 1)
+                        /* context.font = "8px Arial";
+                         context.fillStyle = "black";
+                         context.lineWidth = 1;
+                         context.fillText("1", player.x, player.y); */
+                }
+
+                for (const fruitId in game.fruits) {
+                    const fruit = game.fruits[fruitId]
+                    context.fillStyle = '#08a331'
+                    context.globalAlpha = 1
+                    context.fillRect(fruit.x, fruit.y, 1, 1)
+                }
+
+                const currentPlayer = game.players[socket.id]
+                context.fillStyle = '#F0DB4F'
+                context.globalAlpha = 1
+                context.fillRect(currentPlayer.x, currentPlayer.y, 1, 1)
+
+
+                requestAnimationFrame(renderGame)
+            }
+
+
+            updateScoreTable()
+
+            enterYourName();
+        })
+
+        socket.on('player-update', (player) => {
+            game.players[player.socketId] = player.newState
+        })
+
+        socket.on('update-player-nome', (player) => {
+            game.players[player.socketId] = player.newState
+
+            // console.log("AAAAAAA NOME", player.newState)
+            updateScoreTable()
+        })
+
+        socket.on('update-player-score', (score) => {
+            game.players[socket.id].score = score
+            updateScoreTable()
+        })
+
+        socket.on('update-player-answer', (player) => {
+            //game.players[player.socketId] = player.newState
+
+            //  alert("Player: " + player.socketNome + " Resposta: " + player.answer);
+
+            let certo = "ERRADO"
+            if (player.answer) {
+                certo = "CERTO"
+            }
+
+            document.getElementById('idResposta').innerHTML = player.socketNome + " respondeu [" + player.resposta + "] " + certo;
+
+
+            game.players[player.socketId].score = player.score
+                // console.log("AAAAAAA NOME", player.newState)
+            updateScoreTable()
+        })
+
+        socket.on('player-remove', (socketId) => {
+            delete game.players[socketId]
+        })
+
+        socket.on('fruit-add', (fruit) => {
+            game.fruits[fruit.fruitId] = {
+                x: fruit.x,
+                y: fruit.y,
+                question: fruit.question
+            }
+            newQuestion(fruit.question)
+        })
+
+        socket.on('fruit-remove', ({
+            fruitId,
+            score,
+            socketId
+        }) => {
+            delete game.fruits[fruitId]
+            multipleOf100Remainder = score % 100
+
+            if (multipleOf100Remainder !== 0) {
+                collectFruitAudio.pause()
+                collectFruitAudio.currentTime = 0
+                collectFruitAudio.play()
+            }
+
+            if (multipleOf100Remainder === 0 && score !== 0) {
+                collectFruitAudio.pause()
+                collect100FruitAudio.pause()
+                collect100FruitAudio.currentTime = 0
+                collect100FruitAudio.play()
+            }
+
+            habiliteAnswer(socketId)
+
+            updateScoreTable()
+        })
+
+        socket.on('concurrent-connections', (concurrentConnections) => {
+            totalPlayersCount = concurrentConnections
+            updateScoreTable()
+        })
+
+        let crazyModeInterval
+        socket.on('start-crazy-mode', () => {
+            crazyModeInterval = setInterval(() => {
+                const randomKey = 37 + Math.floor(Math.random() * 4)
+                    //  console.log(randomKey)
+                const event = new KeyboardEvent('keydown', {
+                    keyCode: randomKey,
+                    which: randomKey
+                })
+
+                document.dispatchEvent(event);
+            }, 150)
+        })
+
+        socket.on('stop-crazy-mode', () => {
+            clearInterval(crazyModeInterval)
+        })
+
+        socket.on('show-max-concurrent-connections-message', () => {
+            //  document.getElementById('max-concurrent-connection-message').style.display = 'block'
+            document.getElementById('game-container').style.display = 'none'
+        })
+
+        socket.on('hide-max-concurrent-connections-message', () => {
+            //   document.getElementById('max-concurrent-connection-message').style.display = 'none'
+            document.getElementById('game-container').style.display = 'block'
+        })
+
+        function updateScoreTable() {
+            const maxResults = 10
+
+            let scoreTableInnerHTML = `
+                    <tr class="header">
+                        <td>Top 10 Jogadores</td>
+                        <td>Pontos</td>
+                    </tr>
+                `
+            const scoreArray = []
+
+            let nr = 1;
+            for (socketId in game.players) {
+                const player = game.players[socketId];
+                //  console.log('NOOOOMMMM ', player.nome);
+                scoreArray.push({
+                    socketNome: player.nome,
+                    socketId: socketId,
+                    score: player.score
+                });
+                nr++;
+            }
+
+            const scoreArraySorted = scoreArray.sort((first, second) => {
+                if (first.score < second.score) {
+                    return 1
+                }
+
+                if (first.score > second.score) {
+                    return -1
+                }
+
+                return 0
+            })
+
+            const scoreSliced = scoreArraySorted.slice(0, maxResults)
+
+            scoreSliced.forEach((score) => {
+
+                scoreTableInnerHTML += `
+                        <tr class="${ socket.id === score.socketId ? 'current-player' : ''}">
+                            <td class="score-value">${score.socketNome}</td>
+                            <td class="score-value">${score.score}</td>
+                        </tr>
+                    `
+                    // <td class="socket-id">${score.socketId}</td>
+            })
+
+            let playerNotInTop10 = true
+
+            for (const score of scoreSliced) {
+                if (socket.id === score.socketId) {
+                    playerNotInTop10 = false
+                    break
+                }
+
+                playerNotInTop10 = true
+            }
+
+            if (playerNotInTop10) {
+                scoreTableInnerHTML += `
+                        <tr class="current-player bottom">
+                            <td class="score-value">${socket.nome}</td>
+                            <td class="score-value">${game.players[socket.id].score}</td>
+                        </tr>
+                    `
+                    // <td class="socket-id">${socket.id}</td>
+            }
+
+            scoreTableInnerHTML += `
+                    <tr class="footer">
+                        <td>Total de jogadores</td>
+                        <td align="right">${totalPlayersCount}</td>
+                    </tr>
+                `
+                // <td></td>
+            scoreTable.innerHTML = scoreTableInnerHTML
+
+            //   console.log("Atualizando tabela..", socket.nome)
+
+        }
+
+        function keyUp() {
+            const player = game.players[socket.id]
+            if (player.y - 1 >= 0) {
+                player.y = player.y - 1
+                socket.emit('player-move', 'up')
+            }
+        }
+
+        var interval_keyUp;
+
+        document.getElementById('key-up').onmousedown = function() {
+            interval_keyUp = setInterval(function() {
+                keyUp();
+            }, 100);
+        }
+
+        document.getElementById('key-up').onmouseup = function() {
+            clearInterval(interval_keyUp);
+        }
+
+        document.getElementById('key-up').ontouchstart = document.getElementById('key-up').onmousedown;
+        document.getElementById('key-up').ontouchend = document.getElementById('key-up').onmouseup;
+
+        function keyDown() {
+            const player = game.players[socket.id]
+            if (player.y + 1 < game.canvasHeight) {
+                player.y = player.y + 1
+                socket.emit('player-move', 'down')
+            }
+        }
+
+        var interval_keyDown;
+
+        document.getElementById('key-down').onmousedown = function() {
+            interval_keyDown = setInterval(function() {
+                keyDown();
+            }, 100);
+        }
+
+        document.getElementById('key-down').ontouchstart = document.getElementById('key-down').onmousedown;
+        document.getElementById('key-down').ontouchend = document.getElementById('key-down').onmouseup;
+
+        document.getElementById('key-down').onmouseup = function() {
+            clearInterval(interval_keyDown);
+        }
+
+        function keyLeft() {
+            const player = game.players[socket.id]
+            if (player.x - 1 >= 0) {
+                player.x = player.x - 1
+                socket.emit('player-move', 'left')
+            }
+        }
+
+        var interval_keyLeft;
+
+        document.getElementById('key-left').onmousedown = function() {
+            interval_keyLeft = setInterval(function() {
+                keyLeft();
+            }, 100);
+        }
+
+        document.getElementById('key-left').onmouseup = function() {
+            clearInterval(interval_keyLeft);
+        }
+
+        document.getElementById('key-left').ontouchstart = document.getElementById('key-left').onmousedown;
+        document.getElementById('key-left').ontouchend = document.getElementById('key-left').onmouseup;
+
+        function keyRight() {
+            const player = game.players[socket.id]
+            if (player.x + 1 < game.canvasWidth) {
+                player.x = player.x + 1
+                socket.emit('player-move', 'right')
+            }
+        }
+
+        var interval_keyRight;
+
+        document.getElementById('key-right').onmousedown = function() {
+            interval_keyRight = setInterval(function() {
+                keyRight();
+            }, 100);
+        }
+
+        document.getElementById('key-right').onmouseup = function() {
+            clearInterval(interval_keyRight);
+        }
+
+        document.getElementById('key-right').ontouchstart = document.getElementById('key-right').onmousedown;
+        document.getElementById('key-right').ontouchend = document.getElementById('key-right').onmouseup;
+
+        function handleKeydown(event) {
+
+            //  event.stopPropagation();
+            // event.preventDefault();
+
+            if (connected) {
+                const player = game.players[socket.id]
+
+                if (event.which === 37 && player.x - 1 >= 0) {
+                    player.x = player.x - 1
+                    socket.emit('player-move', 'left')
+                    return
+                }
+
+                if (event.which === 38 && player.y - 1 >= 0) {
+                    player.y = player.y - 1
+                    socket.emit('player-move', 'up')
+                    return
+                }
+
+                if (event.which === 39 && player.x + 1 < game.canvasWidth) {
+                    player.x = player.x + 1
+                    socket.emit('player-move', 'right')
+                    return
+                }
+                if (event.which === 40 && player.y + 1 < game.canvasHeight) {
+                    player.y = player.y + 1
+                    socket.emit('player-move', 'down')
+                    return
+                }
+            }
+        }
+
+        // Essa lógica deveria estar no server.
+        // Como está no front, é fácil burlar.
+        function throttle(callback, delay) {
+            let isThrottled = false,
+                args, context;
+
+            function wrapper() {
+                if (isThrottled) {
+                    args = arguments;
+                    context = this;
+                    return;
+                }
+
+                isThrottled = true;
+                callback.apply(this, arguments);
+
+                setTimeout(() => {
+                    isThrottled = false;
+                    if (args) {
+                        wrapper.apply(context, args);
+                        args = context = null;
+                    }
+                }, delay);
+            }
+
+            return wrapper;
+        }
+
+        const throttledKeydown = throttle(handleKeydown, 80)
+
+        document.addEventListener('keydown', throttledKeydown)
+
+        //enterYourName();
+    </script>
+</body>
+
+</html>
