@@ -197,7 +197,7 @@ io.on('connection', function(socket) {
 
 });
 
-webServer.listen(process.env.PORT || 3000, function() {
+webServer.listen(80, function() {
     console.log('> Server listening on port:', process.env.PORT || 3000)
 });
 
