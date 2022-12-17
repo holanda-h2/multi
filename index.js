@@ -34,7 +34,7 @@ function sorteioQuestion() {
     question = questions[nrQuestion];
 }
 
-webApp.use(express.json({ extended: false }));
+
 
 webApp.get('/', function(req, res) {
     res.sendFile(__dirname + '/game.html')
